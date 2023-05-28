@@ -41,7 +41,9 @@ then
 fi
 
 RESULT_FILE="vuln_`date +\"%Y%m%d%H%M\"`.txt"
-
+GOOD_FILE="./result/good.txt"
+BAD_FILE="./result/bad.txt"
+CHECK_FILE="./result/check.txt"
 # 색깔 환경 변수 설정
 
 
@@ -67,10 +69,13 @@ fi
 result(){
 	if [ $1 -eq 0 ];then
 		echo -e "$GREEN[+] [ U-$2 ] 결과값 : 양호$COLOR_END" >> $RESULT_FILE 2>&1
+		echo -e "[+] [ U-$2 ] 결과값 : 양호" >> $GOOD_FILE 2>&1
 	elif [ $1 -eq 1 ];then
 		echo -e "$RED[-] [ U-$2 ] 결과값 : 취약 $COLOR_END" >> $RESULT_FILE 2>&1
+		echo -e "[-] [ U-$2 ] 결과값 : 취약" >> $BAD_FILE 2>&1
 	else 
 		echo -e "$PURPLE[?] [ U-$2 ] 결과값 : 검토 $COLOR_END" >> $RESULT_FILE 2>&1
+		echo -e "[?] [ U-$2 ] 결과값 : 검토" >> $CHECK_FILE 2>&1
 	fi
 }
 # 2_8
@@ -80,7 +85,7 @@ echo "[Start Script]"
 echo "=============Linux Security Check Script Start=============" > $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
 
-echo "계정 관리" >> $RESULT_FILE 2>&1
+echo -e "$RED 1. 계정 관리 $COLOR_END" >> $RESULT_FILE 2>&1
 
 #################################################################
 # -주요 정보 통신 기반 시설 계정 관리 U-01 root 계정 원격접속 제한
@@ -267,13 +272,13 @@ fi
 # 취약 :0, 양호 : 1, 검토 :2
 if [ $ssh_flag -eq 1 ] && [ $telnet_flag -eq 1 ];
 then
-	result 0 1
+	result 0 01
 elif [ $ssh_flag -eq 0 ] || [ $telnet_flag -eq 0 ];
 then
-	result 1 1
+	result 1 01
 elif [ $ssh_flag -eq 2 ] || [ $telnet_flag -eq 2 ];
 then
-	result 2 1
+	result 2 01
 fi
 
 echo "" >> $RESULT_FILE 2>&1
@@ -405,9 +410,9 @@ deny_check(){
     fi
     
     if [ $deny_flag -ne 0 ];then
-        result 1 3
+        result 1 03
     else
-        result 0 3
+        result 0 03
 	fi
 }
 
@@ -422,7 +427,7 @@ elif [ -f /etc/pam.d/pam_tally2.so ]; then
 	deny_check
 else
 	echo -e " [-] PAM 설정 파일이 없습니다." >> $RESULT_FILE 2>&1
-	result 1 3
+	result 1 03
 fi
 
 echo "" >> $RESULT_FILE 2>&1
@@ -442,10 +447,10 @@ if [ $shadow -eq 1 ]; then
 	echo -e " [+] /etc/shadow 파일이 존재합니다." >> $RESULT_FILE 2>&1
 	if [ $passwd_wc -eq $shadow_wc ];then
 		echo -e " [+] 모든 계정의 비밀번호가 보호되고 있습니다." >> $RESULT_FILE 2>&1
-		result 0 4
+		result 0 04
 	else
 		echo -e " [-] 적절한 보호가 필요한 계정이 있습니다." >> $RESULT_FILE 2>&1
-		result 2 4
+		result 2 04
 	fi
 fi
 
@@ -604,7 +609,9 @@ else
 fi
 echo "" >> $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
-echo "2. 파일 및 디렉터리 관리" >> $RESULT_FILE 2>&1
+
+
+echo -e "$RED 2. 파일 및 디렉터리 관리 $COLOR_END" >> $RESULT_FILE 2>&1
 #####################################################################
 # U-05 ROOT 홈, 패스 디렉터리 권한 및 패스 설정
 #####################################################################
@@ -657,9 +664,9 @@ if [ -f "/etc/passwd" ]; then
 	group_perm_val=`echo "$permission_val" | awk '{ print substr($0, 2, 1) }'`
 	other_perm_val=`echo "$permission_val" | awk '{ print substr($0, 3, 1) }'`
 	if [ "$owner_perm_val" -le 6 ] && [ "$group_perm_val" -le 4 ] && [ "$other_perm_val" -le 4 ] && [ "$owner_val" = "root" ]; then
-		result 0 7
+		result 0 07
 	else
-		result 1 7
+		result 1 07
 	fi
 else
 	echo "Not FOund /etc/passwd file" >>$RESULT_FILE 2>&1
@@ -763,26 +770,24 @@ do
 	owner=`stat -c '%U' $inet_path$file`
 	if [ $perm -ne 600 ]; then
 		echo "  [-] $file 권한이  $perm 입니다. 600으로 변경하세요(취약)" >> $RESULT_FILE 2>&1
-		result 1 10
+		flag=1
 	else
 		echo "  [+] $file 권한이  $perm 입니다.(양호)" >> $RESULT_FILE 2>&1
-		wc_flag=`expr $wc_flag + 1`
 	fi
 
 	if [[ $owner -ne "root" ]]; then
 		echo "  [-] $file 소유자가 $owner 입니다. root로 변경하세요(취약)" >> $RESULT_FILE 2>&1
-		result 1 10
+		flag=1
 	else
 		echo "  [+] $file 소유자가 $owner 입니다.(양호)" >> $RESULT_FILE 2>&1
-		wc_flag=`expr $wc_flag + 1`
-	fi
-
-	if [ $wc_flag -eq $wc_xinetd ];then
-		if [ $inetd_flag -eq 2 ];then
-			result 0 10
-		fi
 	fi
 done
+if [ $wc_flag -eq 0 ];then
+	result 0 10
+else
+	result 1 10
+fi
+
 rm -f xinetd_list.txt
 echo "" >> $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
@@ -1187,7 +1192,7 @@ fi
 
 echo "" >> $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
-
+echo -e "$RED 3. 서비스 관리 $COLOR_END" >> $RESULT_FILE 2>&1
 ##########################################################################
 # U-19 Finger 서비스 비활성화
 ##########################################################################
@@ -1928,27 +1933,385 @@ echo "" >> $RESULT_FILE 2>&1
 ##############################################################################
 #U-63 ftpusers 파일 소유자 및 권한 설정
 ##############################################################################
-echo "[U-63] : Check"
+echo "[ U-63 ] : Check"
 echo -e "$BG_BLUE [U-63 ftpusers 파일 소유자 및 권한 설정]$COLOR_END" >> $RESULT_FILE 2>&1
-ftp_ls=`ls -al /etc/ftpusers || ls -al /etc/ftpd/ftpusers 2>/dev/null`
-ftp_user=`stat -c '%a' /etc/ftpusers || stat -c '%a' /etc/ftpd/ftpusers 2>/dev/null`
-ftp_own=`echo $ftp_user | awk '{ print substr($0, 1, 1) }'`
-ftp_grp=`echo $ftp_user | awk '{ print substr($0, 2, 1) }'`
-ftp_oth=`echo $ftp_user | awk '{ print substr($0, 3, 1) }'`
-if [ $ftp_own -le 6 ] && [ $ftp_grp -le 4 ] && [ $ftp_oth -eq 0 ];then
-	echo " [+] ftpusers 파일 정보 " >> $RESULT_FILE 2>&1
-	echo "  $ftp_ls"
-	result 0 63
+if [ -f "/etc/ftpusers" ] || [ -f "/etc/ftpd/ftpdusers" ];then
+	echo " [*] ftp/proftp 서비스를 사용중입니다." >> $RESULT_FILE 2>&1
+	ftp_ls=`ls -al /etc/ftpusers || ls -al /etc/ftpd/ftpusers`
+	ftp_user=`stat -c '%a' /etc/ftpusers || stat -c '%a' /etc/ftpd/ftpusers`
+	ftp_own=`echo $ftp_user | awk '{ print substr($0, 1, 1) }'`
+	ftp_grp=`echo $ftp_user | awk '{ print substr($0, 2, 1) }'`
+	ftp_oth=`echo $ftp_user | awk '{ print substr($0, 3, 1) }'`
+	if [ $ftp_own -le 6 ] && [ $ftp_grp -le 4 ] && [ $ftp_oth -eq 0 ];then
+		echo " [+] ftpusers 파일 정보 " >> $RESULT_FILE 2>&1
+		echo "  $ftp_ls"
+		result 0 63
+	else
+		echo " [-] ftpusers 권한 변경이 필요합니다, 현재 권한 : $ftp_user"
+		result 1 63
+	fi
+elif [ -f "/etc/vsftpd/ftpusers" ] || [ -f "/etc/vsftpd/user_list" ] || [ -f "/etc/vsftpd.ftpusers" ] || [ -f "/etc/vsftpd.user_list" ];then
+	echo " [*] vsftpd 서비스를 사용중입니다." >> $RESULT_FILE 2>&1
+    ftp_ls=`ls -al /etc/vsftpd/ftpusers || ls -al /etc/vsftpd/user_list || ls -al /etc/vsftpd.ftpusers || ls -al /etc/vsftpd.user_list`
+    ftp_user=`stat -c '%a' /etc/vsftpd/ftpusers || stat -c '%a' /etc/ftpd/user_list || stat -c '%a' /etc/vsftpd.ftpusers || stat -c '%a' /etc/vsftpd.user_list`
+    ftp_own=`echo $ftp_user | awk '{ print substr($0, 1, 1) }'`
+    ftp_grp=`echo $ftp_user | awk '{ print substr($0, 2, 1) }'`
+    ftp_oth=`echo $ftp_user | awk '{ print substr($0, 3, 1) }'`
+    if [ $ftp_own -le 6 ] && [ $ftp_grp -le 4 ] && [ $ftp_oth -eq 0 ];then
+        echo " [+] ftpusers 파일 정보 " >> $RESULT_FILE 2>&1 
+        echo "  $ftp_ls" >> $RESULT_FILE 2>&1
+        result 0 63 
+    else 
+        echo " [-] ftpusers 권한 변경이 필요합니다, 현재 권한 : $ftp_user" >> $RESULT_FILE 2>&1
+        result 1 63 
+    fi  
 else
-	echo " [-] ftpusers 권한 변경이 필요합니다, 현재 권한 : $ftp_user"
-	result 1 63
+	echo " [+] ftp 서비스를 미사용 중입니다." >> $RESULT_FILE 2>&1
+	result 0 63
+fi
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+##############################################################################
+#U-64 ftpusers 파일 설정(FTP 서비스 ROOT 계정 접근 제한)
+##############################################################################
+echo "[ U-64 ] : Check"
+echo -e "$BG_BLUE [U-64 ftpusers 파일 설정(ftp 서비스 root 계정 접근 제한)]$COLOR_END" >> $RESULT_FILE 2>&1
+if [ -f "/etc/ftpusers" ] || [ -f "/etc/ftpd/ftpdusers" ];then
+    echo " [*] ftp/proftp 서비스를 사용중입니다." >> $RESULT_FILE 2>&1 
+    ftp_cat=`cat /etc/ftpusers || cat /etc/ftpd/ftpusers`
+	echo " [*] root 계정을 등록 혹은 주석 해제 해주세요" >> $RESULT_FILE
+elif [ -f "/etc/vsftpd/ftpusers" ] || [ -f "/etc/vsftpd/user_list" ] || [ -f "/etc/vsftpd.ftpusers" ] || [ -f "/etc/vsftpd.user_list" ];then
+    echo " [*] vsftpd 서비스를 사용중입니다." >> $RESULT_FILE 2>&1 
+    ftp_cat=`cat /etc/vsftpd/ftpusers || cat /etc/vsftpd/user_list || cat /etc/vsftpd.ftpusers || cat /etc/vsftpd.user_list`
+        echo " [*] root 계정을 등록 혹은 주석 해제 해주세요 " >> $RESULT_FILE 2>&1  
+else
+    echo " [+] ftp 서비스를 미사용 중입니다." >> $RESULT_FILE 2>&1 
+fi
+result 2 64
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+##############################################################################
+#U-65 at 서비스 권한 설정
+##############################################################################
+echo "[ U-65 ] : Check"
+echo -e "$BG_BLUE [U-65 at 서비스 권한 설정]$COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] at 명령어 SUID 설정 확인" >> $RESULT_FILE 2>&1
+flag=0
+at_perm=`stat -c '%a' /usr/bin/at`
+at_perm_suid=`echo $at_perm | awk '{ print substr($0, 1, 1) }'`
+at_perm_own=`echo $at_perm | awk '{ print substr($0, 2, 1) }'`
+at_perm_grp=`echo $at_perm | awk '{ print substr($0, 3, 1) }'`
+at_perm_oth=`echo $at_perm | awk '{ print substr($0, 4, 1) }'`
+
+if [ $at_perm_suid -eq 4 ];then
+	echo "  [-] at 명령어의 SUID 설정을 제거하거나 유저를 관리해주세요!!" >> $RESULT_FILE 2>&1
+	echo "  [-] at 명령어의 권한 : $at_perm" >> $RESULT_FILE 2>&1
+fi
+if [ $at_perm_own -le 7 ] && [ $at_perm_grp -le 5 ] && [ $at_perm_oth -eq 0 ];then
+	echo "  [+] at 명령어의 현재 권한 설정은 정상입니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] at 명령어의 권한을 변경해주세요!" >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+echo " [*] at.allow, at.deny 설정 확인 " >> $RESULT_FILE 2>&1
+echo " [*] 2개 파일의 접근권한 및 소유자 확인" >> $RESULT_FILE 2>&1
+if [ -f /etc/at.allow ];then
+	at_allow_perm=`stat -c '%a' /etc/at.allow`
+	at_allow_own=`echo $at_allow_perm | awk '{ print substr($0, 1, 1) }'`
+	at_allow_grp=`echo $at_allow_perm | awk '{ print substr($0, 2, 1) }'`
+	at_allow_oth=`echo $at_allow_perm | awk '{ print substr($0, 3, 1) }'`
+	if [ $at_allow_own -le 6 ] && [ $at_allow_grp -le 4 ] && [ $at_allow_oth -eq 0 ];then
+		echo "  [+] at.allow 파일의 접근 권한 설정이 정상입니다." >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] at.allow 파일의 접근 권한을 750으로 변경해주세요, 현재 : $at_allow_perm " >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+	at_allow_owner=`stat -c '%U' /etc/at.allow`
+	if [[ $at_allow_owner == "root" ]];then
+		echo "  [+] at.allow 파일의 소유가가 $at_allow_owner 으로 정상입니다" >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] at.allow 파일의 소유자를 변경해주세요, 현재 : $at_allow_owner" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else 
+	echo "  [-] at.allow 파일이 없습니다, 추가해주세요" >> $RESULT_FILE 2>&1
+	flag=1
+fi
+if [ -f /etc/at.deny ];then
+	at_deny_perm=`stat -c '%a' /etc/at.deny`
+	at_deny_own=`echo $at_deny_perm | awk '{ print substr($0, 1, 1) }'`
+	at_deny_grp=`echo $at_deny_perm | awk '{ print substr($0, 2, 1) }'`
+	at_deny_oth=`echo $at_deny_perm | awk '{ print substr($0, 3, 1) }'`
+	if [ $at_deny_own -le 6 ] && [ $at_deny_grp -le 4 ] && [ $at_deny_oth -eq 0 ];then
+		echo "  [+] at.deny 파일의 접근 권한 설정이 정상입니다." >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] at.deny 파일의 접근 권한을 변경해주세요, 현재 : $at_deny_perm" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+	at_deny_owner=`stat -c '%U' /etc/at.deny`
+	if [[ $at_deny_owner == "root" ]];then
+		echo "  [+] at.deny 파일의 소유자가 $at_deny_owner 으로 정상입니다." >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] at.deny 파일의 소유자를 변경해주세요, 현재 : $at_deny_owner" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] at.deny 파일이 없습니다. 추가해주세요" >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [ $flag -eq 1 ];then
+	result 1 65
+else
+	result 0 65
+fi
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+##############################################################################
+#U-66 SNMP서비스 구동 점검
+##############################################################################
+echo "[ U-66 ] : Check"
+echo -e "$BG_BLUE [U-66 SNMP 서비스 구동 점검 ] $COLOR_END">> $RESULT_FILE 2>&1
+echo " [*] SNMP 서비스 구동 여부를 점검합니다. " >> $RESULT_FILE 2>&1
+ps_snmp=`ps -ef | grep 'snmp' | grep -v 'grep'`
+
+if [[ $ps_snmp != "" ]];then
+	echo "  [-] SNMP 서비스를 중지시켜주세요!!(취약)" >> $RESULT_FILE 2>&1
+	echo "   $ps_snmp"
+	result 1 66
+else
+	echo "  [+] 구동중인  SNMP 서비스가 없습니다" >> $RESULT_FILE 2>&1
+	result 0 66
 fi
 
 echo "" >> $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
 
 
-echo "4. 패치 관리" >> $RESULT_FILE 2>&1
+##############################################################################
+#U-67 SNMP 서비스 Community String의 복잡성 설정
+##############################################################################
+echo "[ U-67 ] : Check"
+echo -e "$BG_BLUE [U-67 SNMP 서비스 Community String의 복잡성 설정]$COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] 현재 SNMP 사용 여부 확인" >> $RESULT_FILE 2>&1
+flag=0
+ps_ef=`ps -ef | grep "snmp" | grep -v "grep"`
+if [[ $ps_ef != "" ]];then
+	echo "  [-] SNMP 서비스가 구동중입니다." >> $RESULT_FILE 2>&1
+	echo "   $ps_ef"
+fi
+echo " [*] /etc/snmp/snmpd.conf 파일 Community String 설정" >> $RESULT_FILE 2>&1
+snmp_conf=`cat /etc/snmp/snmpd.conf | grep "com2sec" | grep -v "#"`
+comm_string=`cat /etc/snmp/snmpd.conf | grep "com2sec" | grep -v "#" | awk -F" " '{ print $4 }'`
+if [[ $comm_string == "public" ]];then
+	echo "   [-] Community String 이 기본 public 으로 설정되어있습니다." >> $RESULT_FILE 2>&1
+	result 1 67
+else
+	echo "   [+] Community String 이 기본 값이 아닙니다, 현재 설정 : $comm_string ." >> $RESULT_FILE 2>&1
+	result 0 67
+fi
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+
+##############################################################################
+#U-68 로그온 시 경고 메시지 제공
+##############################################################################
+echo "[ U-68 ] : Check"
+echo -e "$BG_BLUE [ U-68 로그온 시 경고 메시지 제공]$COLOR_END" >> $RESULT_FILE 2>&1
+flag=0
+
+echo " [*] 서버 로그온 메시지 설정 :/etc/motd" >> $RESULT_FILE 2>&1
+if [ -f /etc/motd ]; then
+	motd=`cat /etc/motd`
+	if [[ $motd != "" ]];then
+		echo "  [+] 현재 설정된 경고 메시지 : $motd" >> $RESULT_FILE 2>&1
+		
+	else 
+		echo "  [-] 경고 메시지를 설정하세요!! " >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] 경고 메시지를 설정하세요!! " >> $RESULT_FILE 2>&1
+fi
+
+echo " [*] Telnet 배너 설정" >> $RESULT_FILE 2>&1
+if [ -f /etc/issue.net ];then
+	telnet=`cat /etc/issue.net`
+	if [[ $telnet != "" ]];then
+		echo "  [+] 현재 설정된 배너 메시지 : $telnet" >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] 배너를 설정해주세요 : $telnet" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] 배너를 설정해주세요 : $telnet" >> $RESULT_FILE 2>&1
+fi
+
+echo " [*] FTP 배너 설정" >> $RESULT_FILE 2>&1
+if [ -f /etc/vsftpd/vsftpd.conf ];then
+	ftp=`cat /etc/vsftpd/vsftpd.conf | grep "ftpd_banner" | awk -F"=" '{ print $2 }'`
+	if [[ $ftp != "" ]];then
+		echo "  [+] 현재 설정된 배너 메시지 : $ftp" >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] 배너를 설정해주세요 : $ftp" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] 배너를 설정해주세요 : $ftp" >> $RESULT_FILE 2>&1
+fi
+
+echo " [*] SNMP 배너 설정" >> $RESULT_FILE 2>&1
+if [ -f /etc/mail/sendmail.cf ];then
+	snmp=`cat /etc/mail/sendmail.cf | grep "GreetingMessage" | awk -F"=" '{ print }'`
+	if [[ $snmp != "" ]];then
+		echo "  [+] 현재 설정된 배너 메시지 : $telnet" >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] 배너를 설정해주세요 : $snmp" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] 배너를 설정해주세요 : $ftp" >> $RESULT_FILE 2>&1
+fi
+
+echo "[*] DNS 배너 설정" >> $RESULT_FILE 2>&1
+if [ -f /etc/named.conf ];then
+	dns=`cat /etc/named.conf`
+	if [[ $dns != "" ]];then
+		echo "  [+] 현재 설정된 배너 메시지 : $dns" >> $RESULT_FILE 2>&1
+	else
+		echo "  [-] 배너를 설정해주세요 : $dns" >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+else
+	echo "  [-] 배너를 설정해주세요 : $dns" >> $RESULT_FILE 2>&1
+fi
+
+if [ $flag -eq 1 ];then
+	result 1 68
+else
+	result 0 68
+fi
+
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+
+##############################################################################
+#U-69 NFS 설정 파일 접근 권한
+##############################################################################
+echo "[ U-69 ] : Check"
+echo -e "$BG_BLUE [ U-69 ] NFS 설정 파일 접근 권한 ]$COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] NFS 소유자 및 권한 확인" >> $RESULT_FILE 2>&1
+flag=0
+nfs_perm=`stat -c '%a' /etc/exports`
+nfs_owner=`stat -c '%U' /etc/exports`
+
+nfs_own=`echo $nfs_perm | awk '{ print substr($0, 1, 1) }'`
+nfs_grp=`echo $nfs_perm | awk '{ print substr($0, 2, 1) }'`
+nfs_oth=`echo $nfs_perm | awk '{ print substr($0, 3, 1) }'`
+
+echo "  [*] /etc/exports 파일의 소유자 : $nfs_owner, 권한 : $nfs_perm 입니다." >> $RESULT_FILE 2>&1
+echo "  [*] 권장 소유자 : root, 권한 : 644 입니다." >> $RESULT_FILE 2>&1
+if [[ $nfs_owner != "root" ]];then
+	echo "   [-] 소유자를 root로 변경해주세요 !! " >> $RESULT_FILE 2>&1
+	flag=1
+else
+	echo "   [+] 소유자가 $nfs_owner 으로 권고사항을 충족합니다" >> $RESULT_FILE 2>&1
+	if [ $nfs_own -le 6 ] && [ $nfs_grp -le 4 ] && [ $nfs_oth -le 4 ];then
+		echo "   [+] 권한이 644 이하로 설정되어있습니다." >> $RESULT_FILE 2>&1
+	else
+		echo "   [-] 권한이 644 이상으로 설정되어있습니다. 변경해주세요 " >> $RESULT_FILE 2>&1
+		flag=1
+	fi
+fi
+
+if [ $flag -eq 1 ];then
+	result 1 69
+else
+	result 0 69
+fi
+		
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+
+##############################################################################
+#U-34 expn, vrfy 명령어 제한
+##############################################################################
+echo "[ U-70 ] : Check"
+echo -e "$BG_BLUE [U-70 expn, vrfy 명령어 제한 ] $COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] /etc/mail/sendmail.cf 설정 확인" >> $RESULT_FILE 2>&1
+if [ -f /etc/mail/sendmail.cf ];then
+	option=`cat /etc/mail/sendmail.cf | grep 'PrivacyOptions=' | awk -F"=" '{ print $2 }'`
+	echo " [*] PrivacyOptions의 설정 값 : $option" >> $RESULT_FILE 2>&1
+	if [[ "$option" == *noexpn* ]];then
+		if [[ "$option" == *novrfy* ]];then
+			echo "  [+] nevrfy, noexpn의 설정이 양호합니다." >> $RESULT_FILE 2>&1
+		else
+			flag=1
+		fi
+	else
+		flag=1
+	fi
+else
+	echo "  [+] SNMP 서비스를 사용하지 않습니다." >> $RESULT_FILE 2>&1
+	flag=0
+fi
+
+if [ $flag -eq 1 ];then
+	result 1 34
+else
+	result 0 34
+fi
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+##############################################################################
+#U-71 Apache 웹 서비스 정보 숨김
+##############################################################################
+echo "[ U-71 ] : Check"
+echo -e "$BG_BLUE [U-71 Apache 웹 서비스 정보 숨김]$COLOR_END" >> $RESULT_FILE 2>&1
+token=`cat /etc/httpd/conf/httpd.conf | grep ServerTokens`
+sig=`cat /etc/httpd/conf/httpd.conf | grep ServerSignature`
+token=${token,,}
+sig=${sig,,}
+flag=0
+
+echo " [*] ServerTokens, ServerSignature 값 확인" >> $RESULT_FILE 2>&1
+if [[ $token == "prod" ]];then
+	if [[ $sig == "off" ]];then
+		echo "  [+] ServerTokens : $token, ServerSignature : $sig " >> $RESULT_FILE 2>&1
+	else
+		flag=1
+	fi
+else
+	flag=1
+fi
+
+if [[ $flag -eq 1 ]];then
+	echo "  [-] 현재 설정된 값은 ServerTokens : $token, ServerSignature : $sig " >> $RESULT_FILE 2>&1
+	echo "  [-] 각각 Prod와 off로 변경하세요 " >> $RESULT_FILE 2>&1
+	result 1 71
+else
+	result 0 71
+fi
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+
+
+echo -e "$RED 4. 패치 관리 $COLOR_END" >> $RESULT_FILE 2>&1
 ##############################################################################
 #U-42 최신 보안 패치 및 벤더 권고사항 적용
 ##############################################################################
@@ -1962,8 +2325,72 @@ result 2 42
 echo "" >> $RESULT_FILE 2>&1
 echo "" >> $RESULT_FILE 2>&1
 
-echo "5. 로그 관리" >> $RESULT_FILE 2>&1
+echo -e "$RED 5. 로그 관리 $COLOR_END" >> $RESULT_FILE 2>&1
 ##############################################################################
 # U-43 로그의 정기적 검토 및 보고
 ##############################################################################
+echo "[ U-43 ] : Check"
+echo -e "$BG_BLUE [U-43 로그의 정기적 검토 및 보고]$COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] 서버의 운영 환경에 적합한 정기적인 로그 검토 및 보고 체계가 필요합니다!!" >> $RESULT_FILE 2>&1
+result 2 43
+
+echo "" >> $RESULT_FILE 2>&1
+echo "" >> $RESULT_FILE 2>&1
+
+
+
+##############################################################################
+#U-72 정책에 따른 시스템 로깅 설정
+##############################################################################
+echo "[ U-72 ] : Check"
+echo -e "$BG_BLUE [U-44 정책에 따른 시스템 로깅 설정 ] $COLOR_END" >> $RESULT_FILE 2>&1
+echo " [*] /etc/rsyslog.conf 의 주요 로깅 설정 확인" >> $RESULT_FILE 2>&1
+info=`cat /etc/rsyslog.conf | grep "*.info;mail.none;authpriv.none;cron.none" | awk -F" " '{ print $2 }'`
+auth=`cat /etc/rsyslog.conf | grep "authpriv.\*" | grep -v '#' | awk -F" " '{ print $2 }'`
+cron=`cat /etc/rsyslog.conf | grep "cron.\*" | awk -F" " '{ print $2 }'`
+emerg=`cat /etc/rsyslog.conf | grep "\*.emerg" | awk -F" " '{ print $2 }'`
+alert=`cat /etc/rsyslog.conf | grep "\*.alert" | awk -F" " '{ print $2 }'`
+flag=0
+
+if [[ $info == "/var/log/messages" ]];then
+	echo "  [+] *.info;mail.none;authpriv.none;cron.none 의 설정이 $info 로, 양호합니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] *.info;mail.none;authpriv.none;cron.none 의 설정이 $info 로, 취약합니다." >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [[ $auth == "/var/log/secure" ]];then
+	echo "  [+] authpriv.*의 설정이 $auth 로, 양호합니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] authpriv.*의 설정이 $auth 로, 취약합니다." >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [[ $cron == "/var/log/cron" ]];then
+	echo "  [+] cron.*의 설정이 $cron 로, 양호합니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] cron.*의 설정이 $cron 로, 취약합니다." >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [[ $emerg == "\*" ]]; then
+	echo "  [+] *.emerge의 설정이 $emerge 로, 양호합니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] *.emerge의 설정이 $emerge 로, 취약합니다." >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [[ $alert == "/dev/console" ]];then
+	echo "  [+] *.alert의 설정이 $alert 로, 양호합니다." >> $RESULT_FILE 2>&1
+else
+	echo "  [-] *.alert의 설정이 $alert 로, 취약합니다." >> $RESULT_FILE 2>&1
+	flag=1
+fi
+
+if [[ $flag -eq 1 ]];then
+	result 1 72
+else
+	result 0 72
+fi
+	
 
