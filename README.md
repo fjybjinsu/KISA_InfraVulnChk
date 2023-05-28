@@ -36,7 +36,7 @@ Bash Shell Script
 ![image](https://github.com/fjybjinsu/KISA_InfraVulnChk/assets/85774577/3d786195-c5fa-48f9-b09a-0baf78a09cc9)
 
 ### 터미널 진행 상황 출력
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2718e0c1-e16c-4e41-86c7-a066ffb28bf0/Untitled.png)
+![image](https://github.com/fjybjinsu/KISA_InfraVulnChk/assets/85774577/3f8426fa-f899-4453-9884-b683663b3be5)
 
 ### 실행 후 생성된 디렉토리 및 결과 파일
 ![image](https://github.com/fjybjinsu/KISA_InfraVulnChk/assets/85774577/397a8722-16e3-4ff9-8a41-d08a9c66cc97)
