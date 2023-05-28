@@ -1,22 +1,54 @@
 # KISA_InfraVulnChk
 # 1. 개요
-KISA에서 발간한 21년도 주요정보통신기반시설 취약점 진단 스크립트를 학습한 후, UNIX 계열 서버 진단 항목 73개에 대한 전체 자동화 스크립트
+KISEC 강의를 수강 후 주통기 전 항목에 대한 취약점 진단 자동화 스크립트를 만들면서, 스크립트 작성 능력 향상과 서버 관리에 대한 공부를 위한 목적으로 UNIX 계열 서버 전체 73개 항목에 대한 스크립트를 작성
 
-# 2. 참여인원
-양진수(1인)
+# 2. 기술 스택
+Bash Shell Script
 
-# 3. 배운것들
-리눅스 Shell 스크립트 문법에 자신감이 생겼고, unix 계열 서버의 다양한 설정 파일에 대해 알 수 있는 시간이었다.
+# 3. 제작 동기
+- KISEC 취약점 진단 강의에서 실습하지 않은 내용 학습 및 자동화 시도
+- 정보보안기사 시스템 보안 영역 추가 학습
 
-# 4. 폴더 및 파일 설명
+# 4. 역할
+- 양진수 1인 개발
 
-# 5. 보완할 점
-CentOS 7 기준으로 작성하였는데, 일부 서비스들이 설치되어 있지 않은 상태여서 설치하는 데 시간이 조금 걸렸다. 설정 파일에 들어있을 수 있는 다양한 설정값들에 대한 옵션들을 다방면으로 고려하지 못했던 것 같다. (띄어쓰기, 탭키 등등)
-모든 경우에 대해 하나씩 테스트를 해보는 것이 제한되었고, 내가 가지고 있는 이미지의 기준으로는 정상적으로 동작하지만, 실제 운영하는 서버에서 실행한 다음 코드의 잘못된 식들을 찾아보고 싶다.
-쉘 스크립트의 다양한 명령어들을 학습할 수 있지만, 코딩을 하면서 분명히 무언가 다른 명령어가 있는 것 같은데 이렇게 하는 것이 적합한 코드일까?라는 생각이 많이 드는 경우도 많았고, 대부분의 명령어가 결과창이나 설정파일의 정보를 긁어온다음에 문자열 조작을 하는 것이 대부분이어서 조금 더 다양한 분야에서의 명령어에 대해서 공부하기는 부족했던 것 같다.
-리눅스 서버 말고 AIX, SOLARIS, HP-UX 서버들에 대한 설정이 다 다른 점에서 만약에 실무에 들어가게 된다면 아마 서버 별로 스크립트를 전부 작성해야할 것 같다는 생각도 들었다.
-모아진 결과 파일을 기반으로 python을 가지고 텍스트 파일을 입력 받은 후 해당 플래그들을 기반으로 Python GUI 프로그램을 만들 수도 있을 것 같다.(굳이 PYTHON이 아니어도 되겠지만)
+# 5 배운 것
+- Bash Shell의 문법을 숙달하여 다양한 방식으로 문자열을 조작하는데 자신감을 얻었음
+- 서버 보안과 관련된 설정들을 심도 있게 학습할 수 있었음
+
+# 6 보완할 점
+- KISEC 강의에서의 CentOS7 이미지를 기반으로 제작하였고, 몇 가지 사용하지 않는 서비스들을 설치하고 테스트한다고 시간이 소요
+- 현재 보유 서버 이미지를 기준으로는 정상 동작하지만, 다양한 테스트 케이스를 고려해서 테스트 희망
+- 추후 PYTHON을 기반으로 양호/취약/검토 파일들을 플래그로 설정하여 GUI 환경에서 제작 가능 시도 요망
+
+# 7. 실행 방법 및 프로그램 설명(상세 내용 캡처 화면 참고)
+- 터미널에서 infra.sh를 실행
+- 실행 시 터미널에 항목 별로 진행 상황 표시
+- 완료 시, vuln_날짜시간.txt라는 최종 결과 파일 및 result라는 디렉토리가 출력
+- result에는 결과가 길어 가독성에 영향을 주는 항목들을 별도 리다이렉션한 항목들 작성
+- good.txt 파일은 진단 결과가 '양호'한 항목들만 작성
+- bad.txt 파일은 진단 결과가 '취약'한 항목들만 작성
+- check.txt 파일은 진단 결과가 '검토'인 항목들만 작성
 
 # 6. 코드 예시
+## 실행 결과 vuln_날짜시간.txt 파일 내용
 ![image](https://github.com/fjybjinsu/KISA_InfraVulnChk/assets/85774577/5d1db54f-441f-4476-9fb3-38dd3c603ca2)
 ![image](https://github.com/fjybjinsu/KISA_InfraVulnChk/assets/85774577/3d786195-c5fa-48f9-b09a-0baf78a09cc9)
+
+## 터미널 진행 상황 출력
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2718e0c1-e16c-4e41-86c7-a066ffb28bf0/Untitled.png)
+
+## 실행 후 생성된 디렉토리 및 결과 파일
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/30e753e7-289c-44a4-8444-d181c25d84a2/Untitled.png)
+
+## result 디렉토리 내부 상세 결과 및 결과 분류 파일
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e1041ca9-e9b8-434a-9487-3812a64a9e07/Untitled.png)
+
+## 진단 결과 '양호' 항목(good.txt)
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ab43235e-6979-4c06-af4a-9e3e9ecce98a/Untitled.png)
+
+## 진단 결과 '검토' 항목(check.txt)
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4206e402-697c-4beb-8a5a-f2d3a45c7d86/Untitled.png)
+
+## 진단 결과 '취약' 항목(bad.txt)
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c6975bf1-b4a7-4e93-9937-637effcdbe6c/Untitled.png)
